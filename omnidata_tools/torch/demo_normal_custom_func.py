@@ -12,6 +12,7 @@ import os.path
 import glob
 
 from .modules.midas.dpt_depth import DPTDepthModel
+from .data.transforms import get_transform
 
 
 root_dir = './recon/third_party/omnidata/omnidata_tools/torch/pretrained_models/'
@@ -20,8 +21,8 @@ map_location = (lambda storage, loc: storage.cuda()) if torch.cuda.is_available(
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 image_size = 384
-pretrained_weights_path = root_dir + 'omnidata_dpt_depth_v2.ckpt'  # 'omnidata_dpt_depth_v1.ckpt'
-model = DPTDepthModel(backbone='vitb_rn50_384') # DPT Hybrid
+pretrained_weights_path = root_dir + 'omnidata_dpt_normal_v2.ckpt'
+model = DPTDepthModel(backbone='vitb_rn50_384', num_channels=3) # DPT Hybrid
 checkpoint = torch.load(pretrained_weights_path, map_location=map_location)
 if 'state_dict' in checkpoint:
     state_dict = {}
@@ -29,14 +30,16 @@ if 'state_dict' in checkpoint:
         state_dict[k[6:]] = v
 else:
     state_dict = checkpoint
+
 model.load_state_dict(state_dict)
 model.to(device)
 trans_totensor = transforms.Compose([transforms.Resize(image_size, interpolation=PIL.Image.BILINEAR),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=0.5, std=0.5)])
+                                    transforms.CenterCrop(image_size),
+                                    get_transform('rgb', image_size=None)])
+trans_topil = transforms.ToPILImage()
 
 
-def demo_depth_custom_func(image_dir, output_path, vis_path):
+def demo_normal_custom_func(image_dir, output_path, vis_path):
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(vis_path, exist_ok=True)
 
@@ -59,8 +62,4 @@ def demo_depth_custom_func(image_dir, output_path, vis_path):
                 img_tensor = img_tensor.repeat_interleave(3,1)
 
             output = model(img_tensor).clamp(min=0, max=1)
-
-            output = F.interpolate(output.unsqueeze(0), (h, w), mode='bicubic').squeeze(0)
-            output = output.clamp(0,1)
-            plt.imsave(vis_path_, 1 - output.detach().cpu().squeeze(), cmap='viridis')
             np.save(save_path, output.detach().cpu().squeeze().numpy())
