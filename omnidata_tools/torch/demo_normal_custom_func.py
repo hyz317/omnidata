@@ -33,8 +33,8 @@ else:
 
 model.load_state_dict(state_dict)
 model.to(device)
-trans_totensor = transforms.Compose([transforms.Resize(image_size, interpolation=PIL.Image.BILINEAR),
-                                    transforms.CenterCrop(image_size),
+trans_totensor = transforms.Compose([#transforms.Resize(image_size, interpolation=PIL.Image.BILINEAR),
+                                    # transforms.CenterCrop(image_size),
                                     get_transform('rgb', image_size=None)])
 trans_topil = transforms.ToPILImage()
 
@@ -62,4 +62,5 @@ def demo_normal_custom_func(image_dir, output_path, vis_path):
                 img_tensor = img_tensor.repeat_interleave(3,1)
 
             output = model(img_tensor).clamp(min=0, max=1)
+            output = F.interpolate(output, (h, w), mode='bicubic').squeeze(0)
             np.save(save_path, output.detach().cpu().squeeze().numpy())
