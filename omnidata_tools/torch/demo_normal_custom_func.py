@@ -39,15 +39,13 @@ trans_totensor = transforms.Compose([#transforms.Resize(image_size, interpolatio
 trans_topil = transforms.ToPILImage()
 
 
-def demo_normal_custom_func(image_dir, output_path, vis_path):
+def demo_normal_custom_func(image_dir, output_path):
     os.makedirs(output_path, exist_ok=True)
-    os.makedirs(vis_path, exist_ok=True)
 
     for f in tqdm(glob.glob(image_dir+'/*')):
         img_path, output_file_name = f, os.path.splitext(os.path.basename(f))[0]
         with torch.no_grad():
             save_path = os.path.join(output_path, f'{output_file_name}.npy')
-            vis_path_ = os.path.join(vis_path, f'{output_file_name}.png')
 
             # print(f'Reading input {img_path} ...')
             
